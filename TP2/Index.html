@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1428">
+<title>Tic Tac Toe</title>
+
+<style>
+/* =========================================================
+   COLORES: todos los colores del juego están acá, en variables.
+   La cruz es roja (--x) y el círculo es verde (--o).
+   ========================================================= */
+:root {
+  --bg-1: #2a3566;
+  --bg-2: #0e1428;
+  --card: #f5f7fc;
+  --card-edge: #ffffff;
+  --ink: #1c2340;
+  --muted: #6b7599;
+  --line: #dde3f2;
+  --accent: #4a5fd0;
+  --accent-dark: #3547ad;
+  --accent-shadow: #26337f;
+  --accent-soft: #eef1ff;
+  --accent-soft-edge: #c5cdf7;
+
+  --x: #e53935;
+  --x-dark: #b71c1c;
+  --x-soft: #ffe3e2;
+  --x-glow: rgba(229, 57, 53, .35);
+  --x-light: #ff8f8c;
+
+  --o: #2fa84f;
+  --o-dark: #1d7f38;
+  --o-soft: #dcf5e3;
+  --o-glow: rgba(47, 168, 79, .35);
+  --o-light: #7be59a;
+
+  --warn: #f59e0b;
+  --warn-light: #fcd34d;
+
+  --tile-1: #ffffff;
+  --tile-2: #e8ecf8;
+  --tile-edge: #c9d1e8;
+  --board: #d6dcf0;
+  --board-shadow: rgba(40, 50, 100, .25);
+  --tile-shadow: rgba(40, 50, 100, .18);
+  --overlay: rgba(14, 20, 40, .84);
+  --overlay-text: #cdd5f5;
+  --white: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background:
+    radial-gradient(600px 400px at 0% 0%, var(--x-glow), transparent 60%),
+    radial-gradient(600px 400px at 100% 100%, var(--o-glow), transparent 60%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  background-attachment: fixed;
+}
+
+/* ---------- Tarjeta principal ---------- */
+.card {
+  width: min(100%, 460px);
+  background: linear-gradient(180deg, var(--card-edge), var(--card));
+  border-radius: 28px;
+  padding: 22px 18px 16px;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6), inset 0 2px 0 var(--white);
+}
+.screen { display: none; }
+.screen.active { display: block; animation: fade .3s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+h1 { font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: -.02em; }
+.credit { margin-top: 14px; text-align: center; font-size: .75rem; color: var(--muted); }
+
+/* ---------- Marcas X y O (se reusan en el logo y en el tablero) ---------- */
+.mx, .mo { position: relative; }
+.mx::before, .mx::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 64%; height: 13%;
+  border-radius: 99px;
+  background: linear-gradient(180deg, var(--x), var(--x-dark));
+  box-shadow: 0 3px 8px var(--x-glow);
+}
+.mx::before { transform: translate(-50%, -50%) rotate(45deg); }
+.mx::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+.mo::before {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  border: clamp(7px, 2.9vw, 12px) solid var(--o);
+  box-shadow: 0 3px 8px var(--o-glow), inset 0 2px 6px var(--o-glow);
+}
+
+/* ---------- Menú ---------- */
+.logo { display: flex; justify-content: center; gap: 10px; margin-bottom: 6px; }
+.logo span { width: 50px; height: 50px; }
+.logo .mo::before { border-width: 7px; }
+.lead { text-align: center; color: var(--muted); margin: 2px 0 14px; }
+.rules {
+  list-style: none; display: grid; gap: 8px; margin: 0 0 6px; padding: 14px;
+  background: var(--white); border: 2px solid var(--line); border-radius: 16px;
+  font-size: .92rem; line-height: 1.35;
+}
+.rules li { padding-left: 22px; position: relative; }
+.rules li::before { content: ""; position: absolute; left: 2px; top: .4em; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.rules li:nth-child(1)::before { background: var(--x); }
+.rules li:nth-child(2)::before { background: var(--o); }
+.label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 14px 0 8px; }
+.hint { font-size: .85rem; color: var(--muted); margin: 8px 0 16px; min-height: 2.4em; line-height: 1.3; }
+
+.seg { display: grid; gap: 8px; grid-template-columns: repeat(2, 1fr); }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
+.opt {
+  font: inherit; font-weight: 700; color: var(--ink); cursor: pointer;
+  border: 2px solid var(--line); background: var(--white); border-radius: 14px;
+  padding: 12px 6px; box-shadow: 0 3px 0 var(--line);
+  transition: transform .12s, box-shadow .12s, border-color .12s, background .12s;
+}
+.opt:hover { transform: translateY(-1px); }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); box-shadow: 0 3px 0 var(--accent-soft-edge); }
+
+/* ---------- Botones ---------- */
+.btn {
+  appearance: none; border: 0; cursor: pointer; font: inherit; font-weight: 800;
+  border-radius: 16px; padding: 14px 18px; width: 100%;
+  transition: transform .12s, box-shadow .12s;
+}
+.btn.primary {
+  font-size: 1.15rem; color: var(--white);
+  background: linear-gradient(180deg, #5b70e6, var(--accent-dark));
+  box-shadow: 0 5px 0 var(--accent-shadow), 0 12px 20px rgba(53, 71, 173, .35);
+}
+.btn.primary:hover { transform: translateY(-1px); }
+.btn.primary:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-shadow); }
+.btn.ghost { background: transparent; color: var(--muted); padding: 10px; }
+.btn.ghost:hover { color: var(--ink); }
+.btn:focus-visible, .opt:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* ---------- Temporizador (arriba) ---------- */
+.timer { text-align: center; }
+.timer small { color: var(--muted); font-weight: 700; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.time-text {
+  font-size: clamp(2.6rem, 12vw, 3.4rem); font-weight: 900; line-height: 1.05;
+  font-variant-numeric: tabular-nums; color: var(--ink); transition: color .2s, opacity .2s;
+}
+.bar { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 6px; box-shadow: inset 0 1px 3px var(--board-shadow); }
+.bar i { display: block; height: 100%; width: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), #7d8cf0); transition: width .12s linear; }
+.timer.low .time-text { color: var(--warn); animation: tickPulse 1s infinite; }
+.timer.low .bar i { background: linear-gradient(90deg, var(--warn), var(--warn-light)); }
+.timer.paused .time-text { opacity: .55; animation: none; }
+@keyframes tickPulse { 50% { transform: scale(1.06); } }
+
+/* ---------- Puntos (abajo del temporizador) ---------- */
+.scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; margin: 14px 0 16px; }
+.score {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px;
+  background: var(--white); border: 2px solid var(--line); border-radius: 16px;
+  box-shadow: 0 3px 0 var(--line); transition: border-color .2s, box-shadow .2s;
+}
+.score .who { display: flex; align-items: center; gap: 6px; }
+.score small { color: var(--muted); font-size: .76rem; font-weight: 700; white-space: nowrap; }
+.score b { font-size: 2rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.score.x.active { border-color: var(--x); box-shadow: 0 0 0 4px var(--x-glow); }
+.score.o.active { border-color: var(--o); box-shadow: 0 0 0 4px var(--o-glow); }
+.score.bump b { animation: bump .5s ease; }
+@keyframes bump { 40% { transform: scale(1.5); } }
+.round { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 58px; }
+.round small { color: var(--muted); font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.round b { font-size: 1.15rem; }
+
+.badge {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  font-size: .75rem; font-weight: 900; color: var(--white);
+}
+.badge.x { background: linear-gradient(var(--x), var(--x-dark)); }
+.badge.o { background: linear-gradient(var(--o), var(--o-dark)); }
+
+/* ---------- Tablero 3x3 ---------- */
+.board-wrap { position: relative; max-width: 360px; margin: 0 auto; }
+.board {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px;
+  background: var(--board); border-radius: 22px;
+  box-shadow: inset 0 3px 8px var(--board-shadow), 0 0 0 4px transparent;
+  transition: box-shadow .25s;
+}
+.board[data-turn="X"] { box-shadow: inset 0 3px 8px var(--board-shadow), 0 0 0 4px var(--x-glow); }
+.board[data-turn="O"] { box-shadow: inset 0 3px 8px var(--board-shadow), 0 0 0 4px var(--o-glow); }
+
+.cell {
+  aspect-ratio: 1; min-width: 0; border: 0; border-radius: 16px; position: relative; cursor: pointer;
+  background: linear-gradient(180deg, var(--tile-1), var(--tile-2));
+  box-shadow: 0 5px 0 var(--tile-edge), 0 8px 14px var(--tile-shadow);
+  transition: transform .12s, box-shadow .12s, background .2s;
+}
+.board:not(.locked) .cell.empty:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--tile-edge), 0 12px 18px var(--tile-shadow); }
+.board:not(.locked) .cell.empty:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--tile-edge); }
+.cell:not(.empty), .board.locked .cell { cursor: default; }
+.cell:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.cell.mx::before { animation: popX1 .28s cubic-bezier(.3, 1.6, .5, 1) both; }
+.cell.mx::after  { animation: popX2 .28s cubic-bezier(.3, 1.6, .5, 1) .05s both; }
+.cell.mo::before { animation: popO .3s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes popX1 { from { transform: translate(-50%, -50%) rotate(45deg) scale(0); } to { transform: translate(-50%, -50%) rotate(45deg) scale(1); } }
+@keyframes popX2 { from { transform: translate(-50%, -50%) rotate(-45deg) scale(0); } to { transform: translate(-50%, -50%) rotate(-45deg) scale(1); } }
+@keyframes popO  { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.cell.win.mx { background: linear-gradient(180deg, var(--white), var(--x-soft)); animation: winPulse .6s ease-in-out 2; }
+.cell.win.mo { background: linear-gradient(180deg, var(--white), var(--o-soft)); animation: winPulse .6s ease-in-out 2; }
+@keyframes winPulse { 50% { transform: scale(1.07); } }
+
+/* ---------- Cartel sobre el tablero ---------- */
+.banner {
+  position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; text-align: center; padding: 16px;
+  background: var(--overlay); color: var(--white); border-radius: 22px;
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.banner.show { opacity: 1; pointer-events: auto; }
+.banner h2 { font-size: 1.6rem; line-height: 1.15; }
+.banner p { margin-top: 8px; color: var(--overlay-text); line-height: 1.3; }
+.banner.x h2 { color: var(--x-light); }
+.banner.o h2 { color: var(--o-light); }
+.banner.time h2 { color: var(--warn-light); }
+
+.status { text-align: center; margin: 16px 0 6px; font-weight: 800; min-height: 1.5em; }
+.status.x { color: var(--x); }
+.status.o { color: var(--o-dark); }
+
+/* ---------- Pantalla final ---------- */
+.end { text-align: center; padding: 6px 0; }
+.trophy { font-size: 4rem; line-height: 1.1; animation: bump .8s ease; }
+.end h1.x { color: var(--x); }
+.end h1.o { color: var(--o-dark); }
+.end p { color: var(--muted); margin-top: 6px; line-height: 1.35; }
+.final { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 18px 0 22px; font-size: 2.6rem; font-weight: 900; }
+.final .fs { display: flex; align-items: center; gap: 8px; }
+.final .badge { width: 32px; height: 32px; font-size: 1rem; }
+.final .dash { color: var(--muted); }
+.stack { display: grid; gap: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+
+<body>
+<main class="card">
+
+  <!-- ================= MENÚ ================= -->
+  <section id="screen-menu" class="screen active">
+    <div class="logo" aria-hidden="true"><span class="mx"></span><span class="mo"></span></div>
+    <h1>Tic Tac Toe</h1>
+    <p class="lead">Ta-Te-Ti contrarreloj</p>
+
+    <ul class="rules">
+      <li>Tenés <b>1 minuto en total</b> para jugar <b>3 rondas</b> seguidas.</li>
+      <li>Cada ronda ganada vale <b>1 punto</b>.</li>
+      <li>Si terminan empatados, se juega una <b>partida final de desempate</b>.</li>
+    </ul>
+
+    <h3 class="label">Modo de juego</h3>
+    <div class="seg" id="mode-group">
+      <button type="button" class="opt" data-mode="pvp">👥 2 jugadores</button>
+      <button type="button" class="opt" data-mode="ai">🤖 Contra la IA</button>
+    </div>
+
+    <div id="diff-block">
+      <h3 class="label">Dificultad de la IA</h3>
+      <div class="seg three">
+        <button type="button" class="opt" data-diff="easy">Fácil</button>
+        <button type="button" class="opt" data-diff="medium">Media</button>
+        <button type="button" class="opt" data-diff="hard">Imposible</button>
+      </div>
+    </div>
+
+    <p class="hint" id="mode-hint"></p>
+    <button type="button" class="btn primary" id="btn-play">¡Jugar!</button>
+  </section>
+
+  <!-- ================= JUEGO ================= -->
+  <section id="screen-game" class="screen">
+    <!-- Temporizador arriba -->
+    <div class="timer" id="timer">
+      <small>Tiempo total</small>
+      <div class="time-text" id="time-text">1:00</div>
+      <div class="bar"><i id="bar-fill"></i></div>
+    </div>
+
+    <!-- Puntos abajo del temporizador -->
+    <div class="scoreboard">
+      <div class="score x" id="score-x">
+        <div class="who"><span class="badge x">X</span><small id="name-x">Jugador 1</small></div>
+        <b id="pts-x">0</b>
+      </div>
+      <div class="round"><small>Ronda</small><b id="round-text">1/3</b></div>
+      <div class="score o" id="score-o">
+        <div class="who"><span class="badge o">O</span><small id="name-o">Jugador 2</small></div>
+        <b id="pts-o">0</b>
+      </div>
+    </div>
+
+    <!-- Tablero: 3 filas x 3 columnas -->
+    <div class="board-wrap">
+      <div class="board locked" id="board" role="group" aria-label="Tablero de Tic Tac Toe"></div>
+      <div class="banner" id="banner" aria-live="polite">
+        <div><h2 id="banner-title"></h2><p id="banner-sub"></p></div>
+      </div>
+    </div>
+
+    <p class="status" id="status"></p>
+    <button type="button" class="btn ghost" id="btn-quit">Salir al menú</button>
+  </section>
+
+  <!-- ================= FINAL ================= -->
+  <section id="screen-end" class="screen">
+    <div class="end">
+      <div class="trophy" id="end-icon">🏆</div>
+      <h1 id="end-title">¡Empate!</h1>
+      <p id="end-sub"></p>
+      <div class="final">
+        <div class="fs"><span class="badge x">X</span><b id="end-x">0</b></div>
+        <span class="dash">–</span>
+        <div class="fs"><b id="end-o">0</b><span class="badge o">O</span></div>
+      </div>
+      <div class="stack">
+        <button type="button" class="btn primary" id="btn-again">Jugar de nuevo</button>
+        <button type="button" class="btn ghost" id="btn-menu">Cambiar modo</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="credit">Hecho con Claude por Emanuel Luna</p>
+</main>
+
+<script>
+/* =========================================================
+   LÓGICA PURA (sin DOM): tablero, minimax y decisión de la IA
+   ========================================================= */
+// ==== INICIO LÓGICA ====
+const LINES = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],   // filas
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],   // columnas
+  [0, 4, 8], [2, 4, 6]               // diagonales
+];
+
+// Probabilidad de que la IA "se distraiga" y juegue una casilla cualquiera
+const ERROR_RATE = { easy: 0.40, medium: 0.15, hard: 0 };
+
+function checkWinner(board) {
+  for (const line of LINES) {
+    const [a, b, c] = line;
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return { winner: board[a], line };
+    }
+  }
+  return null;
+}
+
+function emptyCells(board) {
+  const out = [];
+  for (let i = 0; i < 9; i++) if (!board[i]) out.push(i);
+  return out;
+}
+
+// Minimax con poda alfa-beta. Puntaje desde el punto de vista de "me".
+// Gana rápido = mejor puntaje; pierde tarde = menos malo.
+function minimax(board, turn, me, opp, depth, alpha, beta) {
+  const res = checkWinner(board);
+  if (res) return res.winner === me ? 10 - depth : depth - 10;
+  const free = emptyCells(board);
+  if (free.length === 0) return 0;
+
+  if (turn === me) {
+    let best = -Infinity;
+    for (const i of free) {
+      board[i] = me;
+      best = Math.max(best, minimax(board, opp, me, opp, depth + 1, alpha, beta));
+      board[i] = null;
+      alpha = Math.max(alpha, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+  let best = Infinity;
+  for (const i of free) {
+    board[i] = opp;
+    best = Math.min(best, minimax(board, me, me, opp, depth + 1, alpha, beta));
+    board[i] = null;
+    beta = Math.min(beta, best);
+    if (beta <= alpha) break;
+  }
+  return best;
+}
+
+// Decide la jugada de la IA.
+// 1) Puntúa cada casilla libre mirando todas las continuaciones (minimax).
+// 2) Si puede ganar ya, gana.
+// 3) Según la dificultad, a veces se distrae.
+// 4) Se queda con las jugadas de mayor puntaje (la mejor ruta para ganar).
+// 5) Si hay varias igual de buenas, usa lo que aprendió del jugador (profile):
+//    ocupa la casilla que más suele usar, cortándole su camino habitual.
+function chooseAiMove(board, me, opp, difficulty, profile) {
+  const free = emptyCells(board);
+  if (free.length === 0) return -1;
+
+  const scored = free.map((i) => {
+    board[i] = me;
+    const score = minimax(board, opp, me, opp, 1, -Infinity, Infinity);
+    board[i] = null;
+    return { i, score };
+  });
+
+  const win = scored.find((m) => m.score === 9);
+  if (win) return win.i;
+
+  if (Math.random() < (ERROR_RATE[difficulty] || 0)) {
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  const bestScore = Math.max(...scored.map((m) => m.score));
+  const best = scored.filter((m) => m.score === bestScore);
+
+  const weight = (m) => (profile && profile.cells ? profile.cells[m.i] || 0 : 0);
+  const maxW = Math.max(...best.map(weight));
+  const finalists = best.filter((m) => weight(m) === maxW);
+  return finalists[Math.floor(Math.random() * finalists.length)].i;
+}
+// ==== FIN LÓGICA ====
+
+
+/* =========================================================
+   INTERFAZ Y FLUJO DEL JUEGO (interacción)
+   ========================================================= */
+(() => {
+  'use strict';
+
+  const TOTAL_TIME = 60;      // 1 minuto en total
+  const TOTAL_ROUNDS = 3;     // 3 rondas consecutivas
+  const PROFILE_KEY = 'ttt_perfil_jugador_v1';
+
+  const $ = (id) => document.getElementById(id);
+  const screens = { menu: $('screen-menu'), game: $('screen-game'), end: $('screen-end') };
+  const boardEl = $('board');
+  const bannerEl = $('banner');
+  const statusEl = $('status');
+  const timerEl = $('timer');
+
+  // ---- Estado ----
+  let mode = 'ai';              // 'pvp' | 'ai'
+  let difficulty = 'medium';    // 'easy' | 'medium' | 'hard'
+  let board = Array(9).fill(null);
+  let turn = 'X';
+  let round = 0;                // 0,1,2 = rondas; 3 = partida final de desempate
+  let tiebreak = false;
+  let scores = { X: 0, O: 0 };
+  let timeLeft = TOTAL_TIME;
+  let running = false;          // el reloj solo corre mientras se juega
+  let locked = true;            // bloquea el tablero
+  let winLine = null;
+  let humanMoves = 0;
+  let lastTick = 0;
+  let tickId = null;
+  let timeouts = [];
+  const profile = loadProfile();
+
+  // ---- Perfil del jugador (lo que "aprende" la IA) ----
+  function loadProfile() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PROFILE_KEY));
+      if (p && Array.isArray(p.cells) && p.cells.length === 9) return p;
+    } catch (e) { /* sin almacenamiento: no pasa nada */ }
+    return { cells: Array(9).fill(0) };
+  }
+  function saveProfile() {
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) { /* ignorar */ }
+  }
+
+  // ---- Textos ----
+  const label = (s) => mode === 'ai' ? (s === 'X' ? 'Vos' : 'IA') : (s === 'X' ? 'Jugador 1' : 'Jugador 2');
+  const whoText = (s) => mode === 'ai' ? (s === 'X' ? 'vos' : 'la IA') : label(s);
+
+  // ---- Timeouts controlados ----
+  function schedule(fn, ms) {
+    const id = setTimeout(() => { timeouts = timeouts.filter((t) => t !== id); fn(); }, ms);
+    timeouts.push(id);
+  }
+  function clearTimers() { timeouts.forEach(clearTimeout); timeouts = []; }
+
+  // ---- Tablero: crear las 9 casillas (3 filas x 3 columnas) ----
+  const cells = [];
+  for (let i = 0; i < 9; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cell empty';
+    b.dataset.i = i;
+    boardEl.appendChild(b);
+    cells.push(b);
+  }
+  boardEl.addEventListener('click', (e) => {
+    const c = e.target.closest('.cell');
+    if (c) onCell(Number(c.dataset.i));
+  });
+
+  // ---- Render ----
+  function showScreen(name) {
+    Object.keys(screens).forEach((k) => screens[k].classList.toggle('active', k === name));
+  }
+
+  function renderBoard() {
+    for (let i = 0; i < 9; i++) {
+      const v = board[i];
+      let cls = 'cell ' + (v === 'X' ? 'mx' : v === 'O' ? 'mo' : 'empty');
+      if (winLine && winLine.includes(i)) cls += ' win';
+      if (cells[i].className !== cls) cells[i].className = cls;
+      cells[i].setAttribute('aria-label',
+        'Fila ' + (Math.floor(i / 3) + 1) + ', columna ' + ((i % 3) + 1) + ': ' + (v || 'vacía'));
+    }
+    const aiTurn = mode === 'ai' && turn === 'O';
+    boardEl.classList.toggle('locked', locked || aiTurn || !running);
+    boardEl.dataset.turn = running ? turn : '';
+  }
+
+  function renderScores(bumpWho) {
+    $('pts-x').textContent = scores.X;
+    $('pts-o').textContent = scores.O;
+    $('round-text').textContent = tiebreak ? 'Final' : (round + 1) + '/' + TOTAL_ROUNDS;
+    $('score-x').classList.toggle('active', running && turn === 'X');
+    $('score-o').classList.toggle('active', running && turn === 'O');
+    if (bumpWho) {
+      const el = $('score-' + bumpWho.toLowerCase());
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
+    }
+  }
+
+  function renderStatus() {
+    let text;
+    if (mode === 'ai') text = turn === 'X' ? 'Tu turno · X' : 'La IA está pensando… · O';
+    else text = 'Turno de ' + label(turn) + ' · ' + turn;
+    if (tiebreak) text = 'Desempate · ' + text;
+    statusEl.textContent = text;
+    statusEl.className = 'status ' + turn.toLowerCase();
+  }
+
+  function renderTimer() {
+    const secs = Math.ceil(timeLeft);
+    $('time-text').textContent = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+    $('bar-fill').style.width = (timeLeft / TOTAL_TIME * 100) + '%';
+    timerEl.classList.toggle('low', timeLeft <= 10);
+    timerEl.classList.toggle('paused', !running);
+  }
+
+  function showBanner(title, sub, cls) {
+    $('banner-title').textContent = title;
+    $('banner-sub').textContent = sub;
+    bannerEl.className = 'banner show ' + cls;
+  }
+  function hideBanner() { bannerEl.className = 'banner'; }
+
+  // ---- Reloj: 1 minuto en total, solo corre mientras se juega ----
+  function startClock() {
+    clearInterval(tickId);
+    lastTick = performance.now();
+    tickId = setInterval(tick, 100);
+  }
+  function tick() {
+    const now = performance.now();
+    const dt = (now - lastTick) / 1000;
+    lastTick = now;
+    if (running) {
+      timeLeft = Math.max(0, timeLeft - dt);
+      if (timeLeft <= 0) { renderTimer(); timeUp(); return; }
+    }
+    renderTimer();
+  }
+
+  // ---- Flujo de partida ----
+  function starterOf(r) { return r % 2 === 0 ? 'X' : 'O'; }   // se alterna quién empieza
+
+  function startMatch() {
+    clearTimers();
+    scores = { X: 0, O: 0 };
+    round = 0;
+    tiebreak = false;
+    timeLeft = TOTAL_TIME;
+    running = false;
+    locked = true;
+    $('name-x').textContent = label('X');
+    $('name-o').textContent = label('O');
+    showScreen('game');
+    startClock();
+    startRound();
+  }
+
+  function startRound() {
+    clearTimers();
+    hideBanner();
+    board = Array(9).fill(null);
+    winLine = null;
+    humanMoves = 0;
+    turn = starterOf(round);
+    locked = false;
+    running = true;
+    renderBoard(); renderScores(); renderStatus(); renderTimer();
+    maybeAiTurn();
+  }
+
+  function onCell(i) {
+    if (!running || locked || board[i]) return;
+    if (mode === 'ai' && turn !== 'X') return;
+    play(i);
+  }
+
+  function play(i) {
+    // La IA aprende: guarda qué casillas elige el jugador (la primera pesa el doble)
+    if (mode === 'ai' && turn === 'X') {
+      profile.cells[i] += humanMoves === 0 ? 2 : 1;
+      humanMoves++;
+      saveProfile();
+    }
+    board[i] = turn;
+    const res = checkWinner(board);
+    if (res) { renderBoard(); return endRound(res); }
+    if (emptyCells(board).length === 0) { renderBoard(); return endRound(null); }
+    turn = turn === 'X' ? 'O' : 'X';
+    renderBoard(); renderScores(); renderStatus();
+    maybeAiTurn();
+  }
+
+  function maybeAiTurn() {
+    if (mode !== 'ai' || turn !== 'O' || !running) return;
+    locked = true;
+    renderBoard();
+    schedule(() => {
+      if (!running) return;
+      const idx = chooseAiMove(board.slice(), 'O', 'X', difficulty, profile);
+      locked = false;
+      play(idx);
+    }, 450 + Math.random() * 350);
+  }
+
+  function endRound(res) {
+    running = false;      // el reloj se pausa entre rondas
+    locked = true;
+    let title, sub, cls;
+    if (res) {
+      scores[res.winner]++;
+      winLine = res.line;
+      title = '¡Punto para ' + whoText(res.winner) + '!';
+      cls = res.winner.toLowerCase();
+    } else {
+      title = 'Ronda empatada';
+      cls = 'draw';
+    }
+    if (tiebreak) sub = 'Terminó la partida final';
+    else if (round < TOTAL_ROUNDS - 1) sub = 'Sigue la ronda ' + (round + 2) + ' de ' + TOTAL_ROUNDS;
+    else if (scores.X === scores.O) sub = '¡Empate en puntos! Se juega la partida final de desempate';
+    else sub = 'Se terminaron las 3 rondas';
+
+    renderBoard(); renderScores(res && res.winner); renderTimer();
+    statusEl.textContent = 'Ronda terminada';
+    statusEl.className = 'status';
+    schedule(() => showBanner(title, sub, cls), 800);
+    schedule(() => { hideBanner(); advance(); }, 2700);
+  }
+
+  function advance() {
+    if (tiebreak) return finishMatch('final');
+    if (round < TOTAL_ROUNDS - 1) { round++; return startRound(); }
+    if (scores.X !== scores.O) return finishMatch('rondas');
+    tiebreak = true;          // empate tras 3 rondas: partida final de decisión
+    round = TOTAL_ROUNDS;
+    startRound();
+  }
+
+  function timeUp() {
+    running = false;
+    locked = true;
+    clearTimers();
+    renderBoard(); renderTimer();
+    showBanner('¡Se acabó el tiempo!', 'Gana quien tenga más puntos', 'time');
+    schedule(() => { hideBanner(); finishMatch('tiempo'); }, 2000);
+  }
+
+  function finishMatch(reason) {
+    running = false;
+    locked = true;
+    clearTimers();
+    clearInterval(tickId);
+    hideBanner();
+
+    const w = scores.X > scores.O ? 'X' : scores.O > scores.X ? 'O' : null;
+    let title, icon;
+    if (!w) { title = '¡Empate!'; icon = '🤝'; }
+    else if (mode === 'ai') { title = w === 'X' ? '¡Ganaste!' : 'Ganó la IA'; icon = w === 'X' ? '🏆' : '🤖'; }
+    else { title = '¡Ganó ' + label(w) + '!'; icon = '🏆'; }
+
+    let sub;
+    if (reason === 'tiempo') sub = w ? 'Se acabó el minuto: gana quien tiene más puntos.' : 'Se acabó el minuto con el marcador igualado.';
+    else if (reason === 'final') sub = w ? 'Se definió en la partida final de desempate.' : 'También empataron la partida final.';
+    else sub = 'Se definió en las 3 rondas.';
+
+    $('end-icon').textContent = icon;
+    $('end-title').textContent = title;
+    $('end-title').className = w ? w.toLowerCase() : '';
+    $('end-sub').textContent = sub;
+    $('end-x').textContent = scores.X;
+    $('end-o').textContent = scores.O;
+    showScreen('end');
+  }
+
+  // ---- Menú ----
+  function updateMenu() {
+    document.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('sel', b.dataset.mode === mode));
+    document.querySelectorAll('[data-diff]').forEach((b) => b.classList.toggle('sel', b.dataset.diff === difficulty));
+    $('diff-block').hidden = mode !== 'ai';
+    $('mode-hint').textContent = mode === 'ai'
+      ? 'La IA aprende tus casillas favoritas y elige el mejor camino para ganar. Vos sos X (rojo).'
+      : 'Los dos juegan en el mismo dispositivo, por turnos. Jugador 1 es X (rojo) y Jugador 2 es O (verde).';
+  }
+
+  document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { mode = b.dataset.mode; updateMenu(); }));
+  document.querySelectorAll('[data-diff]').forEach((b) => b.addEventListener('click', () => { difficulty = b.dataset.diff; updateMenu(); }));
+  $('btn-play').addEventListener('click', startMatch);
+  $('btn-again').addEventListener('click', startMatch);
+  $('btn-menu').addEventListener('click', () => showScreen('menu'));
+  $('btn-quit').addEventListener('click', () => {
+    running = false; locked = true;
+    clearTimers(); clearInterval(tickId);
+    showScreen('menu');
+  });
+
+  updateMenu();
+  renderBoard();
+  renderTimer();
+})();
+</script>
+</body>
+</html>
