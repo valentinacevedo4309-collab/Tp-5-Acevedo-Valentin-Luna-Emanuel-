@@ -7,3 +7,28 @@ Esto generalo en Index.html. Los colores en css y la interacion con javascript
 • ¿Cómo se gana? : conectando 3 x o O
 • ¿Cómo se pierde? : Se pierde no conectando las 3 X o O
 • ¿Cuántas vidas o cuánto tiempo?: Tenes 1 minuto y 3 rondas, en caso de empatar ronda definitiva 
+
+Arbol de decision:
+¨¨¨¨
+[Inicio de Aplicación]
+│
+├── [Selección de Modo]
+│   ├── Multijugador (Local 2 Jugadores)
+│   └── vs IA (Jugador vs Computadora)
+│
+├── [Inicio de Ronda (1, 2 o 3)]
+│   └── [Temporizador Global: 60 Segundos Activo]
+│       ├── ¿Tiempo Agotado? (0s) ──> Fin de ronda actual por tiempo
+│       └── ¿Movimiento Válido? ──> Marcar Casilla (Rojo: X / Verde: O)
+│
+├── [Evaluación de Estado de Tablero]
+│   ├── ¿Hay Tres en Raya? ──> Asignar +1 Punto al ganador ──> Fin de Ronda
+│   ├── ¿Tablero Lleno? ──────> Empate (Sin puntos) ──────────> Fin de Ronda
+│   └── ¿Juego en Curso? ────> Cambiar Turno
+│
+└── [Gestión de Rondas (Post-Ronda 3)]
+    ├── ¿Ronda < 3? ──> Incrementar contador de ronda y reiniciar tablero
+    └── ¿Ronda == 3 (Completadas)?
+        ├── ¿Hay un ganador con más puntos? ──> ¡Fin del Juego / Mostrar Campeón!
+        └── ¿Empate en puntos? ──────────────> ¡Activar Ronda de Desempate Final!
+¨¨¨¨
