@@ -8,8 +8,6 @@ Esto generalo en Index.html. Los colores en css y la interacion con javascript
 • ¿Cómo se pierde? : Se pierde no conectando las 3 X o O
 • ¿Cuántas vidas o cuánto tiempo?: Tenes 1 minuto y 3 rondas, en caso de empatar ronda definitiva 
 
-Arbol de decision:
-´´´
 [Inicio de Aplicación]
 │
 ├── [Selección de Modo]
@@ -31,4 +29,3 @@ Arbol de decision:
     └── ¿Ronda == 3 (Completadas)?
         ├── ¿Hay un ganador con más puntos? ──> ¡Fin del Juego / Mostrar Campeón!
         └── ¿Empate en puntos? ──────────────> ¡Activar Ronda de Desempate Final!
-´´´
